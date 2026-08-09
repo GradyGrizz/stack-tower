@@ -372,7 +372,8 @@ const TEST_DUNGEON = {
     ], { e: 'shutter' }, { label: 'PUZZLE', chest: { item: 'map' } }),
 
     // A ruined arena: broken floor, collapsed columns and a dark prison-like
-    // perimeter. Every currently implemented enemy type appears here.
+    // perimeter. Every implemented enemy type appears here — keep this room in
+    // sync when a new type is added, since it is the combat testing ground.
     combat: R(1, 0, [
       '##T#######T##',
       '#p..c...c..p#',
@@ -396,6 +397,9 @@ const TEST_DUNGEON = {
         { id: 'arena-dart-b', type: 'dart', r: 8, c: 2 },
         { id: 'arena-ripper-a', type: 'ripper', r: 5, c: 3 },
         { id: 'arena-ripper-b', type: 'ripper', r: 5, c: 9 },
+        // ranged: parked up/down the far lanes so their darts have a clear line
+        { id: 'arena-tribalist-a', type: 'tribalist', r: 1, c: 6 },
+        { id: 'arena-tribalist-b', type: 'tribalist', r: 9, c: 6 },
       ],
     }),
 

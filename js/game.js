@@ -755,21 +755,21 @@ const ScreenGame = {
     o.dark = o.dark === false;
     Save.write(); Snd.select();
     this._applyTestOpts();
-    this._buildTestList(this.testList.sel);
+    this._buildTestList(this.testList ? this.testList.sel : null);
   },
   _toggleTestEnemy(k) {
     const o = this._testOpts();
     o.enemies[k] = o.enemies[k] === false;
     Save.write(); Snd.select();
     this._applyTestOpts();
-    this._buildTestList(this.testList.sel);
+    this._buildTestList(this.testList ? this.testList.sel : null);
   },
   _setAllTestEnemies(on) {
     const o = this._testOpts();
     for (const k in o.enemies) o.enemies[k] = on;
     Save.write(); Snd.select();
     this._applyTestOpts();
-    this._buildTestList(this.testList.sel);
+    this._buildTestList(this.testList ? this.testList.sel : null);
   },
   // push the toggles onto the room you're standing in right now
   _applyTestOpts() {
