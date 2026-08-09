@@ -144,7 +144,7 @@ const ScreenGame = {
     let st = this.rooms[roomId];
     if (!st) { st = parseLevel({ map: room.map, chest: room.chest || null }); this.rooms[roomId] = st; }
     else this._resetRoomBlocks(st, room);
-    st.dark = !!room.dark;
+    st.dark = this._testDark(room.dark);
     st.keys = this.dkeys;
     // place the player: dungeon start, or just inside the entry door
     if (startPos) { st.player.r = startPos.r; st.player.c = startPos.c; st.player.dir = 'down'; }
@@ -342,7 +342,29 @@ const ScreenGame = {
     return Save.data.story.equipped;
   },
 
+  // ── test-dungeon options (settings live under Save.data.settings.test) ──
+  // These only ever apply while gameMode === 'test', so the campaign is
+  // untouched by anything toggled here.
+  _testOpts() {
+    const s = (Save.data.settings && Save.data.settings.test) || {};
+    if (!s.enemies) s.enemies = { skeleton: true, dart: true, ripper: true, tribalist: true };
+    if (s.dark === undefined) s.dark = true;
+    return s;
+  },
+  // enemy types allowed to spawn right now (test dungeon only)
+  _testFilter(spawns) {
+    if (this.gameMode !== 'test') return spawns || [];
+    const en = this._testOpts().enemies;
+    return (spawns || []).filter(sp => en[sp.type] !== false);
+  },
+  // should this room render dark? (test dungeon can force the lights on)
+  _testDark(authored) {
+    if (this.gameMode !== 'test') return !!authored;
+    return !!authored && this._testOpts().dark !== false;
+  },
+
   _startCombat(spawns, key, reset) {
+    spawns = this._testFilter(spawns);
     this.combatKey = key || 'room';
     if (reset || !this.combatDefeated[this.combatKey]) this.combatDefeated[this.combatKey] = {};
     this.combat = Combat.create(spawns, this.combatDefeated[this.combatKey]);
@@ -353,7 +375,7 @@ const ScreenGame = {
   _roomCombatCleared(roomId) {
     if (this.combatCleared[roomId]) return true;
     if (!this.dungeon || !this.dungeon.rooms[roomId]) return true;
-    const spawns = this.dungeon.rooms[roomId].enemies || [];
+    const spawns = this._testFilter(this.dungeon.rooms[roomId].enemies || []);
     if (!spawns.length) return true;
     const defeated = this.combatDefeated[roomId] || {};
     return spawns.every((s, i) => defeated[s.id || ('enemy-' + i)]);
@@ -589,6 +611,7 @@ const ScreenGame = {
     }
     else if (this.mode === 'gear') GearUI.onDir(this, dc, dr);
     else if (this.mode === 'paused' && dr) this.pauseList.nav(dr);
+    else if (this.mode === 'testopts' && dr) this.testList.nav(dr);
     else if ((this.mode === 'results' || this.mode === 'runover') && dr && this.resultInfo) this.resultInfo.list.nav(dr);
   },
   onDirRelease(dc, dr) {
@@ -654,6 +677,7 @@ const ScreenGame = {
     else if (this.mode === 'chest') this._advanceChest();
     else if (this.mode === 'gear') GearUI.onConfirm(this);
     else if (this.mode === 'paused') this.pauseList.activate();
+    else if (this.mode === 'testopts') this.testList.activate();
     else if ((this.mode === 'results' || this.mode === 'runover') && this.resultInfo) this.resultInfo.list.activate();
   },
   onTap(x, y) {
@@ -661,6 +685,7 @@ const ScreenGame = {
     else if (this.mode === 'chest') this._advanceChest();
     else if (this.mode === 'gear') { if (!GearUI.onTap(this, x, y)) this._closeGear(); }
     else if (this.mode === 'paused') this.pauseList.tapAt(x, y);
+    else if (this.mode === 'testopts') this.testList.tapAt(x, y);
     else if ((this.mode === 'results' || this.mode === 'runover') && this.resultInfo) this.resultInfo.list.tapAt(x, y);
     else if (this._backBtn) {
       const b = this._backBtn;
@@ -671,6 +696,7 @@ const ScreenGame = {
   onBack() {
     if (this.mode === 'dialog') { this._advanceDialog(); return; }
     if (this.mode === 'gear') { this._closeGear(); return; }
+    if (this.mode === 'testopts') { Snd.back(); this.mode = 'paused'; this.uiT = 0; this._buildPauseList(); return; }
     if (this.mode === 'paused') { this._resume(); return; }
     if (this.mode !== 'play' && this.mode !== 'moving') return;
     this._pause();
@@ -689,9 +715,73 @@ const ScreenGame = {
     if (this.gameMode !== 'story') items.push({ label: 'RESTART LEVEL', action: () => { this._resume(); this.onReset(); } });
     items.push({ label: 'MUSIC: ' + (st.music ? 'ON' : 'OFF'), action: () => this._pauseToggle('music') });
     items.push({ label: 'SOUND: ' + (st.sfx ? 'ON' : 'OFF'), action: () => this._pauseToggle('sfx') });
+    // test-only settings page: reachable from nowhere else in the game
+    if (this.gameMode === 'test') items.push({ label: 'TEST OPTIONS', gold: true, action: () => this._openTestOpts() });
     items.push({ label: 'QUIT', action: () => this._quit() });
     this.pauseList = new MenuList(items);
     if (keepSel != null) this.pauseList.sel = keepSel;
+  },
+
+  // ── TEST OPTIONS overlay (test dungeon only) ──
+  // Lives inside the running game rather than the global settings screen, so
+  // toggling never unloads the dungeon — changes apply to the current room
+  // immediately.
+  _openTestOpts() {
+    Snd.select();
+    this.mode = 'testopts';
+    this.uiT = 0;
+    this._buildTestList();
+  },
+  _buildTestList(keepSel) {
+    const o = this._testOpts();
+    const NAMES = { skeleton: 'SKELETONS', dart: 'DART TRAPS', ripper: 'EARTH RIPPERS', tribalist: 'TRIBALISTS' };
+    const items = [
+      { label: 'DARKNESS: ' + (o.dark === false ? 'OFF' : 'ON'), action: () => this._toggleTestDark() },
+    ];
+    for (const k in NAMES) {
+      items.push({
+        label: NAMES[k] + ': ' + (o.enemies[k] === false ? 'OFF' : 'ON'),
+        action: () => this._toggleTestEnemy(k),
+      });
+    }
+    items.push({ label: 'ALL ENEMIES ON', action: () => this._setAllTestEnemies(true) });
+    items.push({ label: 'ALL ENEMIES OFF', action: () => this._setAllTestEnemies(false) });
+    items.push({ label: 'BACK', action: () => { Snd.back(); this.mode = 'paused'; this.uiT = 0; this._buildPauseList(); } });
+    this.testList = new MenuList(items);
+    if (keepSel != null) this.testList.sel = Math.min(keepSel, items.length - 1);
+  },
+  _toggleTestDark() {
+    const o = this._testOpts();
+    o.dark = o.dark === false;
+    Save.write(); Snd.select();
+    this._applyTestOpts();
+    this._buildTestList(this.testList.sel);
+  },
+  _toggleTestEnemy(k) {
+    const o = this._testOpts();
+    o.enemies[k] = o.enemies[k] === false;
+    Save.write(); Snd.select();
+    this._applyTestOpts();
+    this._buildTestList(this.testList.sel);
+  },
+  _setAllTestEnemies(on) {
+    const o = this._testOpts();
+    for (const k in o.enemies) o.enemies[k] = on;
+    Save.write(); Snd.select();
+    this._applyTestOpts();
+    this._buildTestList(this.testList.sel);
+  },
+  // push the toggles onto the room you're standing in right now
+  _applyTestOpts() {
+    if (this.gameMode !== 'test' || !this.dungeon) return;
+    const room = this.dungeon.rooms[this.roomId];
+    if (!room) return;
+    this.state.dark = this._testDark(room.dark);
+    // respawn this room's enemies under the new filter (fresh, so re-enabling a
+    // type brings it back even if it was killed earlier this visit)
+    this._startCombat(room.enemies || [], this.roomId, true);
+    const song = this.state.dark ? 'deep' : 'dungeon';
+    if (song !== this._song) { Snd.playMusic(song); this._song = song; }
   },
   _pauseToggle(k) {
     const st = Save.data.settings;
@@ -739,7 +829,7 @@ const ScreenGame = {
     this.state = parseLevel(this.lv);
     if (this.dungeon) {
       const room = this.dungeon.rooms[this.roomId];
-      this.state.dark = !!room.dark;
+      this.state.dark = this._testDark(room.dark);
       this.state.keys = this.dkeys;
       this.rooms[this.roomId] = this.state;   // keep persisted room in sync
     }
@@ -1196,6 +1286,7 @@ const ScreenGame = {
     }
     if ((this.mode === 'results' || this.mode === 'runover') && this.resultInfo) this.drawResults(ctx, W, H);
     if (this.mode === 'paused') this.drawPause(ctx, W, H);
+    if (this.mode === 'testopts') this.drawTestOpts(ctx, W, H);
     if (this.mode === 'gear') GearUI.draw(this, ctx, W, H);
 
     // room-to-room fade (dungeon transitions)
@@ -1286,6 +1377,29 @@ const ScreenGame = {
     drawText(ctx, 'PAUSED', W / 2, py + 20, s + 1, PAL.goldHi, 'center', '#000');
     ctx.restore();
     this.pauseList.draw(ctx, W / 2, py + 64, pw - 48, 42, s, this.uiT);
+  },
+
+  drawTestOpts(ctx, W, H) {
+    ctx.fillStyle = 'rgba(2,3,6,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    const n = this.testList.items.length;
+    // MenuList stacks rows with a fixed 10px gap, so size the panel from that
+    // pitch — the landscape viewport is short and the list must fit whole.
+    const GAP = 10, HEAD = 38, PAD = 12;
+    const maxPh = H - 16;
+    const avail = maxPh - HEAD - PAD;
+    const rowH = Math.max(16, Math.min(34, Math.floor((avail + GAP) / n) - GAP));
+    const listH = n * (rowH + GAP) - GAP;
+    const ph = HEAD + PAD + listH;
+    const pw = Math.min(W - 48, 360);
+    const px = (W - pw) / 2, py = Math.max(8, Math.floor((H - ph) / 2));
+    const s = Math.max(2, Math.min(Math.floor(W / 240), Math.floor((rowH - 6) / 7)));
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, this.uiT / 0.12);
+    Art.panel(ctx, px, py, pw, ph);
+    drawText(ctx, 'TEST OPTIONS', W / 2, py + 12, s, PAL.goldHi, 'center', '#000');
+    ctx.restore();
+    this.testList.draw(ctx, W / 2, py + HEAD, pw - 44, rowH, s, this.uiT);
   },
 
   // OoT-style minimap (top-left): visited rooms glow gold, the current room

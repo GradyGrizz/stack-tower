@@ -36,6 +36,13 @@ const Save = {
         music: true, musicVol: 0.8, sfx: true, sfxVol: 0.9,
         reducedFlash: false, haptics: true, tips: true,
         controlScheme: 'joystick',   // 'joystick' (floating analog) | 'dpad'
+        // TEST DUNGEON options — only reachable from inside the test dungeon.
+        // dark: false renders authored dark rooms lit; enemies gates which
+        // types spawn there (so you can, say, face only skeletons).
+        test: {
+          dark: true,
+          enemies: { skeleton: true, dart: true, ripper: true, tribalist: true },
+        },
       },
       dev: { on: false },
       meta: { seenIntro: false, launches: 0 },
