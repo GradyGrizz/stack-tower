@@ -347,7 +347,7 @@ const ScreenGame = {
   // untouched by anything toggled here.
   _testOpts() {
     const s = (Save.data.settings && Save.data.settings.test) || {};
-    if (!s.enemies) s.enemies = { skeleton: true, dart: true, ripper: true, tribalist: true };
+    if (!s.enemies) s.enemies = { skeleton: true, tribalist: true, ripper: true };
     if (s.dark === undefined) s.dark = true;
     return s;
   },
@@ -734,7 +734,7 @@ const ScreenGame = {
   },
   _buildTestList(keepSel) {
     const o = this._testOpts();
-    const NAMES = { skeleton: 'SKELETONS', dart: 'DART TRAPS', ripper: 'EARTH RIPPERS', tribalist: 'TRIBALISTS' };
+    const NAMES = { skeleton: 'SKELETONS', tribalist: 'TRIBALISTS', ripper: 'EARTH RIPPERS' };
     const items = [
       { label: 'DARKNESS: ' + (o.dark === false ? 'OFF' : 'ON'), action: () => this._toggleTestDark() },
     ];

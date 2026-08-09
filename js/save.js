@@ -41,7 +41,7 @@ const Save = {
         // types spawn there (so you can, say, face only skeletons).
         test: {
           dark: true,
-          enemies: { skeleton: true, dart: true, ripper: true, tribalist: true },
+          enemies: { skeleton: true, tribalist: true, ripper: true },
         },
       },
       dev: { on: false },

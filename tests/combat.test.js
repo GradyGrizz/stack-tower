@@ -89,7 +89,7 @@ for (const ch of ['b', 'h', 's', 'p', 'c', 'f', 'u', 'o', 'k', 'C', 'd']) {
   expect('test dungeon includes ' + ch, testRooms.some(room => room.map.some(row => row.includes(ch))));
 }
 const testEnemies = testRooms.flatMap(room => room.enemies || []);
-expect('test dungeon contains both enemy types', testEnemies.some(e => e.type === 'skeleton') && testEnemies.some(e => e.type === 'dart'));
+expect('test dungeon contains both enemy types', testEnemies.some(e => e.type === 'skeleton') && testEnemies.some(e => e.type === 'tribalist'));
 expect('test dungeon has no developer-room text labels', testRooms.every(room => !room.zones));
 expect('every test room has a concise doorway destination label', testRooms.every(room => typeof room.label === 'string' && room.label.length > 0));
 expect('hub, trap and treasure rooms use existing relic displays',

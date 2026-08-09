@@ -22,7 +22,7 @@ vm.runInNewContext(catalogSource, sandbox);
 const chars = sandbox.SPRITE_LAB_CHARACTERS;
 const anims = sandbox.SPRITE_LAB_ANIMS;
 
-expect('sprite lab lists every current character', chars.map(c => c.id).join(',') === 'hero,skeleton,dart');
+expect('sprite lab lists every current character', chars.map(c => c.id).join(',') === 'hero,skeleton,tribalist,ripper');
 expect('hero has exactly twelve animations', anims.hero.length === 12);
 expect('hero has four idle directions',
   anims.hero.filter(a => a.kind === 'idle').map(a => a.dir).sort().join(',') === 'down,left,right,up');
@@ -35,9 +35,9 @@ expect('skeleton frame animation catalog includes all four attack directions',
 expect('skeleton runtime rig prototype only includes attack right',
   anims.skeleton.filter(a => a.kind === 'rigAttack').map(a => a.dir).join(',') === 'right');
 expect('masked tribalist exposes all four idle directions',
-  anims.dart.length === 4
-  && anims.dart.every(a => a.kind === 'idle')
-  && anims.dart.map(a => a.dir).sort().join(',') === 'down,left,right,up');
+  anims.tribalist.length === 4
+  && anims.tribalist.every(a => a.kind === 'idle')
+  && anims.tribalist.map(a => a.dir).sort().join(',') === 'down,left,right,up');
 expect('masked tribalist renderer receives the selected direction',
   source.includes('faceX: face[0], faceY: face[1], state:'));
 

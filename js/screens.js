@@ -126,7 +126,7 @@ function easeOutBounce(x) {
 // top, bounces to a stop with a little screen-shake + thud, a shine sweeps
 // across it, then the rest of the screen fades in.
 // build stamp — bump this to the deploy time (Arizona/Phoenix time) on each update
-const BUILD_STAMP = '8/9/2026 12:03pm (mst)';
+const BUILD_STAMP = '8/9/2026 12:35pm (mst)';
 
 const ScreenTitle = {
   FALL: 0.85, SHINE_DELAY: 0.12, SHINE_DUR: 0.6,
@@ -719,7 +719,7 @@ const ScreenDev = {
 const SPRITE_LAB_CHARACTERS = [
   { id: 'hero', name: 'DELVER', sub: '12 ANIMATIONS' },
   { id: 'skeleton', name: 'SKELETON', sub: '9 ANIMATIONS' },
-  { id: 'dart', name: 'MASKED TRIBALIST', sub: '4 ANIMATIONS' },
+  { id: 'tribalist', name: 'MASKED TRIBALIST', sub: '4 ANIMATIONS' },
   { id: 'ripper', name: 'EARTH RIPPER', sub: '9 ANIMATIONS' },
 ];
 
@@ -749,7 +749,7 @@ const SPRITE_LAB_ANIMS = {
     { label: 'ATTACK RIGHT', dir: 'right', kind: 'attackFrames' },
     { label: 'RIG ATTACK RIGHT', dir: 'right', kind: 'rigAttack' },
   ],
-  dart: [
+  tribalist: [
     { label: 'IDLE UP', dir: 'up', kind: 'idle' },
     { label: 'IDLE DOWN', dir: 'down', kind: 'idle' },
     { label: 'IDLE LEFT', dir: 'left', kind: 'idle' },

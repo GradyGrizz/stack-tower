@@ -393,13 +393,10 @@ const TEST_DUNGEON = {
         { id: 'arena-skeleton-a', type: 'skeleton', r: 3, c: 4 },
         { id: 'arena-skeleton-b', type: 'skeleton', r: 7, c: 8 },
         { id: 'arena-skeleton-c', type: 'skeleton', r: 5, c: 9 },
-        { id: 'arena-dart-a', type: 'dart', r: 2, c: 10 },
-        { id: 'arena-dart-b', type: 'dart', r: 8, c: 2 },
+        { id: 'arena-tribalist-a', type: 'tribalist', r: 2, c: 10 },
+        { id: 'arena-tribalist-b', type: 'tribalist', r: 8, c: 2 },
         { id: 'arena-ripper-a', type: 'ripper', r: 5, c: 3 },
         { id: 'arena-ripper-b', type: 'ripper', r: 5, c: 9 },
-        // ranged: parked up/down the far lanes so their darts have a clear line
-        { id: 'arena-tribalist-a', type: 'tribalist', r: 1, c: 6 },
-        { id: 'arena-tribalist-b', type: 'tribalist', r: 9, c: 6 },
       ],
     }),
 
@@ -421,9 +418,9 @@ const TEST_DUNGEON = {
       label: 'TRAP / RELICS',
       decorations: [{ type: 'relic', item: 'shield', r: 8, c: 6 }],
       enemies: [
-        { id: 'trap-dart-a', type: 'dart', r: 3, c: 1 },
-        { id: 'trap-dart-b', type: 'dart', r: 3, c: 11 },
-        { id: 'trap-dart-c', type: 'dart', r: 6, c: 6 },
+        { id: 'trap-tribalist-a', type: 'tribalist', r: 3, c: 1 },
+        { id: 'trap-tribalist-b', type: 'tribalist', r: 3, c: 11 },
+        { id: 'trap-tribalist-c', type: 'tribalist', r: 6, c: 6 },
       ],
     }),
 
