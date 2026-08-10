@@ -41,7 +41,12 @@ const Combat = {
   ATTACK_DURATION: 0.22,
   ATTACK_RANGE: 1.2,
 
-  create(spawns, defeated) {
+  // `world` is optional; when given, a spawn that lands in stone/a block/hazard
+  // is nudged to the nearest open tile. An enemy stuck inside a solid can never
+  // move (every step collides) and never shoot (its line of sight starts blocked),
+  // so it just stands there looking broken — this keeps authored *and* random
+  // spawn points honest.
+  create(spawns, defeated, world) {
     const gone = defeated || {};
     return {
       enemies: (spawns || []).filter((s, i) => !gone[s.id || ('enemy-' + i)]).map((s, i) => {
@@ -49,10 +54,16 @@ const Combat = {
         const type = this.ENEMY[raw] ? raw : 'skeleton';
         const cfg = this.ENEMY[type];
         const hp = cfg.maxHealth != null ? cfg.maxHealth : cfg.hp;
+        let x = s.c + 0.5, y = s.r + 0.5;
+        if (world && world.solid && world.solid(x, y, 0.27)) {
+          const spot = this._nearestClear(world, x, y);
+          if (spot) { x = spot.x; y = spot.y; }
+        }
         return {
-          id: s.id || ('enemy-' + i), type, x: s.c + 0.5, y: s.r + 0.5,
+          id: s.id || ('enemy-' + i), type, x, y,
           hp, maxHp: hp, state: 'idle', timer: 0,
           cooldown: (i % 3) * 0.18, flash: 0, dead: false, faceX: 0, faceY: 1,
+          roamT: 0.4 + (i % 5) * 0.3, roamX: 0, roamY: 0,
         };
       }),
       projectiles: [],
@@ -170,8 +181,9 @@ const Combat = {
     // the Ripper aims itself (it must hold its heading once committed), so it
     // is dispatched before the generic "always face the player" rule
     if (e.type === 'ripper') { this._updateRipper(state, e, world, player, dt, events, cfg, dx, dy, dist); return; }
+    // out of aggro: wander instead of standing frozen, so the room feels alive
+    if (dist > cfg.aggro) { this._roam(e, world, dt, cfg); return; }
     e.faceX = dx; e.faceY = dy;
-    if (dist > cfg.aggro) { e.state = 'idle'; return; }
 
     if (e.state === 'windup') {
       e.timer -= dt;
@@ -186,7 +198,15 @@ const Combat = {
       }
       return;
     }
-    if (e.cooldown > 0) { e.state = 'cooldown'; return; }
+    if (e.cooldown > 0) {
+      e.state = 'cooldown';
+      // keep working the spacing between shots rather than freezing in place
+      if (e.type !== 'skeleton') {
+        const sign = dist < 2.6 ? -1 : (dist > 4.6 ? 1 : 0);
+        if (sign) this._move(e, dx * sign, dy * sign, cfg.speed * 0.7 * dt, world);
+      }
+      return;
+    }
 
     if (e.type === 'skeleton') {
       if (dist <= cfg.range) { e.state = 'windup'; e.timer = cfg.windup; events.push({ type: 'enemyWindup', enemy: e }); }
@@ -332,6 +352,28 @@ const Combat = {
       e.trail.push({ x: e.x, y: e.y, t: cfg.trailLifetime, life: cfg.trailLifetime });
       if (e.trail.length > 40) e.trail.shift();
     }
+  },
+
+  // idle wander: stroll a little, pause, pick a new heading. Bumping a wall
+  // immediately re-rolls the heading so nobody grinds against the stone.
+  _roam(e, world, dt, cfg) {
+    e.state = 'idle';
+    e.roamT = (e.roamT || 0) - dt;
+    if (e.roamT <= 0) {
+      if (e.roamX || e.roamY) {                       // was walking -> rest
+        e.roamX = 0; e.roamY = 0; e.roamT = 0.5 + Math.random() * 1.1;
+      } else {                                        // was resting -> walk
+        const a = Math.random() * Math.PI * 2;
+        e.roamX = Math.cos(a); e.roamY = Math.sin(a);
+        e.roamT = 0.6 + Math.random() * 1.0;
+      }
+    }
+    if (!e.roamX && !e.roamY) return;
+    const speed = cfg.roamSpeed != null ? cfg.roamSpeed : (cfg.speed || 1) * 0.45;
+    const px = e.x, py = e.y;
+    this._move(e, e.roamX, e.roamY, speed * dt, world);
+    if (Math.abs(e.x - px) < 1e-9 && Math.abs(e.y - py) < 1e-9) { e.roamT = 0; return; }  // wall: re-roll
+    e.faceX = e.roamX; e.faceY = e.roamY;
   },
 
   _move(e, dx, dy, step, world, underground) {

@@ -367,7 +367,8 @@ const ScreenGame = {
     spawns = this._testFilter(spawns);
     this.combatKey = key || 'room';
     if (reset || !this.combatDefeated[this.combatKey]) this.combatDefeated[this.combatKey] = {};
-    this.combat = Combat.create(spawns, this.combatDefeated[this.combatKey]);
+    // pass the world so any spawn sitting in stone/a block is nudged out
+    this.combat = Combat.create(spawns, this.combatDefeated[this.combatKey], this._combatWorld());
     if ((spawns || []).length && this.combat.enemies.length === 0) this.combatCleared[this.combatKey] = true;
     this.deathT = 0;
   },
